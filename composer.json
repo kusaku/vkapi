@@ -1,0 +1,19 @@
+{
+	"name": "kusaku/vkapi",
+	"description": "Lightweight VK API",
+	"homepage": "http://vk.com/dev",
+	"license": "GPL-3.0",
+	"require": {
+		"php": ">=5.3.0"
+	},
+	"autoload": {
+		"classmap": [""]
+	},
+	"repositories": [
+		{
+			"type": "vcs",
+			"url": "https://github.com/kusaku/vkapi"
+		}
+	]
+}
+

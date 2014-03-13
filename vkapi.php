@@ -15,8 +15,9 @@ class VKAPI {
 	private $app_id;
 	private $api_url;
 	private $api_version;
+	private $storage;
 
-	public function __construct($cfg) {
+	public function __construct($cfg, $storage) {
 		// set default
 		$cfg += array(
 			'api_url'     => 'api.vk.com/method/',
@@ -30,14 +31,27 @@ class VKAPI {
 		}
 		$this->api_url     = $cfg['api_url'];
 		$this->api_version = $cfg['api_version'];
+		$this->storage     = $storage;
 	}
 
-	private function get_access_token($set_access_token = null) {
-		static $access_token;
-		if ($set_access_token) {
-			$access_token = $set_access_token;
+	private function get_access_token($value = null) {
+		/** @var $token \DB\Jig\Mapper */
+		static $token;
+
+		if (!$token) {
+			$token = $this->storage->load();
+			if (!$token) {
+				$token = $this->storage;
+			}
 		}
-		if (!$access_token) {
+
+		if ($value) {
+			$token->value  = $value;
+			$token->expire = time() + 86400;
+			$token->save();
+		}
+
+		if (!$token->exists('value') || $token->expire < time()) {
 			$params['client_id']     = $this->app_id;
 			$params['client_secret'] = $this->api_secret;
 			$params['v']             = $this->api_version;
@@ -60,10 +74,12 @@ class VKAPI {
 				throw new \Exception("{$response['error_description']} ({$response['error']})");
 			}
 
-			$access_token = $response['access_token'];
+			$token->expire = time() + 86400;
+			$token->value  = $response['access_token'];
+			$token->save();
 		}
 
-		return $access_token;
+		return $token->value;
 	}
 
 	public function set_access_token($access_token) {

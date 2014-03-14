@@ -161,7 +161,7 @@ class VKAPI {
 	}
 
 	public function upload($url, $files) {
-		$boundary = uniqid('!', true);
+		$boundary = uniqid('---------------------------', true);
 		$header   = "Content-Type: multipart/form-data; boundary={$boundary}";
 		$content  = "--{$boundary}";
 

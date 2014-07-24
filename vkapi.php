@@ -1,6 +1,4 @@
 <?php
-namespace VK;
-
 /**
  * VKAPI class for vk.com social network
  *
@@ -9,15 +7,17 @@ namespace VK;
  * @autor   Oleg Illarionov, Cyril Arkhipenko
  * @version 1.0
  */
+
+namespace VK;
+
 class VKAPI {
 
 	private $api_secret;
 	private $app_id;
 	private $api_url;
 	private $api_version;
-	private $storage;
 
-	public function __construct($cfg, $storage) {
+	public function __construct($cfg) {
 		// set default
 		$cfg += array(
 			'api_url'     => 'api.vk.com/method/',
@@ -31,55 +31,44 @@ class VKAPI {
 		}
 		$this->api_url     = $cfg['api_url'];
 		$this->api_version = $cfg['api_version'];
-		$this->storage     = $storage;
 	}
 
 	private function get_access_token($value = null) {
-		/** @var $token \DB\Jig\Mapper */
-		static $token;
+		/** @var \Cache $cache */
+		$cache = \Cache::instance();
+		$hash  = "{$this->app_id}.vkapi";
+		if ($value || !$cache->exists($hash, $token)) {
+			if ($value) {
+				$token = $value;
+			} else {
+				$params['client_id']     = $this->app_id;
+				$params['client_secret'] = $this->api_secret;
+				$params['v']             = $this->api_version;
+				$params['grant_type']    = 'client_credentials';
 
-		if (!$token) {
-			$token = $this->storage->load();
-			if (!$token) {
-				$token = $this->storage;
+				$query = 'https://oauth.vk.com/access_token' . '?' . http_build_query($params);
+
+				$context = stream_context_create(
+					array(
+						'http' =>
+							array(
+								'timeout'       => 5,
+								'ignore_errors' => true
+							)
+					));
+
+				$response = json_decode(file_get_contents($query, false, $context), true);
+
+				if (isset($response['error'])) {
+					throw new \Exception("{$response['error_description']} ({$response['error']})");
+				}
+
+				$token = $response['access_token'];
 			}
+			$cache->set($hash, $token, 86400);
 		}
 
-		if ($value) {
-			$token->value  = $value;
-			$token->expire = time() + 86400;
-			$token->save();
-		}
-
-		if (!$token->exists('value') || $token->expire < time()) {
-			$params['client_id']     = $this->app_id;
-			$params['client_secret'] = $this->api_secret;
-			$params['v']             = $this->api_version;
-			$params['grant_type']    = 'client_credentials';
-
-			$query = 'https://oauth.vk.com/access_token' . '?' . http_build_query($params);
-
-			$context = stream_context_create(
-				array(
-					'http' =>
-						array(
-							'timeout'       => 5,
-							'ignore_errors' => true
-						)
-				));
-
-			$response = json_decode(file_get_contents($query, false, $context), true);
-
-			if (isset($response['error'])) {
-				throw new \Exception("{$response['error_description']} ({$response['error']})");
-			}
-
-			$token->expire = time() + 86400;
-			$token->value  = $response['access_token'];
-			$token->save();
-		}
-
-		return $token->value;
+		return $token;
 	}
 
 	public function set_access_token($access_token) {

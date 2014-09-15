@@ -151,23 +151,24 @@ class VKAPI {
 
 	public function upload($url, $files) {
 		$boundary = uniqid('---------------------------', true);
-		$header   = "Content-Type: multipart/form-data; boundary={$boundary}";
 		$content  = "--{$boundary}";
 
 		foreach ($files as $name => $path) {
 			$file_contents = file_get_contents($path);
 			$file_name     = basename($path);
 			$mime_type     = mime_content_type($path);
-			$content .= "\n";
-			$content .= "Content-Disposition: file; name=\"{$name}\"; filename=\"{$file_name}\"\n";
-			$content .= "Content-Type: {$mime_type}\n";
-			$content .= "Content-Transfer-Encoding: binary\n\n";
+			$content .= "\r\n";
+			$content .= "Content-Disposition: form-data; name=\"$name\"; filename=\"$file_name\"\r\n";
+			$content .= "Content-Type: {$mime_type}\r\n";
+			$content .= "Content-Transfer-Encoding: binary\r\n\r\n";
 			$content .= $file_contents;
-			$content .= "\n";
+			$content .= "\r\n";
 			$content .= "--{$boundary}";
 		}
 
-		$content .= "--\n";
+		$content .= "--\r\n";
+
+		$header = "Content-Type: multipart/form-data; boundary={$boundary}\r\nContent-Length: " . strlen($content);
 
 		$context = stream_context_create(
 			array(

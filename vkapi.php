@@ -74,7 +74,7 @@ class VKAPI {
 
 				$token = $response['access_token'];
 			}
-			$cache->set($hash, $token, 86400);
+			$cache->set($hash, $token, 21600);
 		}
 
 		return $token;

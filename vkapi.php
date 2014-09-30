@@ -46,7 +46,7 @@ class VKAPI {
 				$params['v']             = $this->api_version;
 				$params['grant_type']    = 'client_credentials';
 
-				$query = 'https://oauth.vk.com/access_token' . '?' . http_build_query($params);
+				$url = 'https://oauth.vk.com/access_token' . '?' . http_build_query($params);
 
 				$context = stream_context_create(
 					array(
@@ -57,7 +57,16 @@ class VKAPI {
 							)
 					));
 
-				$response = json_decode(@file_get_contents($query, false, $context), true);
+				$tries = 0;
+
+				do {
+					$tries++;
+					$response = json_decode(@file_get_contents($url, false, $context), true);
+				} while (!$response and $tries < 3);
+
+				if (is_null($response)) {
+					throw new \Exception('VK server did not respond, we tried 3 times.', 500);
+				}
 
 				if (isset($response['error'])) {
 					throw new \Exception("{$response['error_description']} ({$response['error']})");
@@ -100,10 +109,15 @@ class VKAPI {
 					)
 			));
 
-		$response = json_decode(@file_get_contents($url, false, $context), true);
+		$tries = 0;
+
+		do {
+			$tries++;
+			$response = json_decode(@file_get_contents($url, false, $context), true);
+		} while (!$response and $tries < 3);
 
 		if (is_null($response)) {
-			throw new \Exception('VK server did not respond on time', 500);
+			throw new \Exception('VK server did not respond, we tried 3 times.', 500);
 		}
 
 		if (isset($response['error'])) {
@@ -183,10 +197,15 @@ class VKAPI {
 				)
 			));
 
-		$response = json_decode(@file_get_contents($url, false, $context), true);
+		$tries = 0;
+
+		do {
+			$tries++;
+			$response = json_decode(@file_get_contents($url, false, $context), true);
+		} while (!$response and $tries < 3);
 
 		if (is_null($response)) {
-			throw new \Exception('VK server did not respond on time', 500);
+			throw new \Exception('VK server did not respond, we tried 3 times.', 500);
 		}
 
 		if (isset($response['error'])) {
